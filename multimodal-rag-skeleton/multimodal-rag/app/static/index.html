@@ -1,0 +1,1801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Folio — AI Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05060a;
+    --text: #f3f4f6;
+    --text-soft: #9ca3af;
+    --text-faint: #6b7280;
+    --glass: rgba(255,255,255,0.05);
+    --glass-strong: rgba(255,255,255,0.09);
+    --border: rgba(255,255,255,0.09);
+    --cyan: #22d3ee;
+    --indigo: #818cf8;
+    --pink: #f472b6;
+    --amber: #facc15;
+    --good: #34d399;
+    --danger: #f87171;
+  }
+
+  html, body { height: 100%; margin: 0; }
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+  }
+  .brand-font { font-family: 'Space Grotesk', sans-serif; }
+  button { font-family: inherit; }
+
+  /* ================= Icon rail ================= */
+  .rail {
+    width: 72px; flex-shrink: 0; height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 22px 0; gap: 10px;
+  }
+  .rail-logo { width: 40px; height: 40px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center; }
+  .rail-logo svg {
+    width: 38px; height: 38px; fill: none; stroke-width: 2.2;
+    stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 8px rgba(129,140,248,0.55));
+  }
+  .rail-btn svg, .suggestion-card .icon svg, .ico {
+    fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .ico-fill { fill: currentColor; stroke: none; }
+  .rail-btn svg { width: 20px; height: 20px; }
+  .rail-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--glass); border: 1px solid var(--border);
+    color: var(--text-soft); cursor: pointer; font-size: 1.05rem;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .rail-btn:hover { background: var(--glass-strong); color: #fff; }
+  .rail-btn.active { background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #05060a; border-color: transparent; }
+  .rail-spacer { flex: 1; }
+  .rail-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--amber));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.8rem; color: #05060a;
+  }
+
+  /* ================= Main column ================= */
+  .main { flex: 1; min-width: 0; height: 100vh; position: relative; display: flex; flex-direction: column; overflow: hidden; }
+  .bg-glow {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(circle at 50% 115%, rgba(34,211,238,0.16), transparent 60%),
+      radial-gradient(circle at 10% -10%, rgba(129,140,248,0.14), transparent 55%),
+      radial-gradient(circle at 95% 10%, rgba(244,114,182,0.08), transparent 50%);
+  }
+
+  /* ================= Talking avatar ================= */
+  .avatar-slot { --av: 230px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .greeting .avatar-slot { --av: 200px; margin-bottom: 18px; }
+
+  .avatar-wrap { position: relative; width: var(--av); height: var(--av); flex-shrink: 0; }
+  .avatar-halo {
+    position: absolute; inset: -26%; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(99,102,241,0.42), rgba(34,211,238,0.14) 45%, transparent 70%);
+    filter: blur(14px); animation: haloPulse 4.5s ease-in-out infinite;
+  }
+  .avatar-orbit {
+    position: absolute; inset: -20%; border-radius: 50%; pointer-events: none;
+    border: 1px solid rgba(129,140,248,0.38);
+    box-shadow: 0 0 14px rgba(34,211,238,0.18);
+    transform: rotate(-24deg) scaleY(0.5);
+  }
+  .avatar-orbit-spin { position: absolute; inset: 0; border-radius: 50%; animation: orbSpin 12s linear infinite; }
+  .avatar-orbit-spin span { position: absolute; border-radius: 50%; }
+  .avatar-orbit-spin .d1 { width: 9px; height: 9px; top: -4px; left: 50%; margin-left: -4px; background: #38bdf8; box-shadow: 0 0 12px 3px rgba(56,189,248,0.85); }
+  .avatar-orbit-spin .d2 { width: 6px; height: 6px; bottom: 14%; right: 2%; background: #a78bfa; box-shadow: 0 0 10px 2px rgba(167,139,250,0.85); }
+  .avatar-face {
+    position: absolute; inset: 0; border-radius: 50%;
+    animation: avFloat 5s ease-in-out infinite;
+    box-shadow: 0 0 40px 4px rgba(59,130,246,0.35), 0 0 90px 14px rgba(139,92,246,0.22);
+    transition: box-shadow 0.3s ease;
+  }
+  .avatar-face svg { width: 100%; height: 100%; display: block; }
+  .avatar-ring {
+    position: absolute; inset: -4px; border-radius: 50%; pointer-events: none;
+    border: 2px solid transparent;
+  }
+  .avatar-wrap.speaking .avatar-face { box-shadow: 0 0 56px 10px rgba(59,130,246,0.55), 0 0 120px 28px rgba(139,92,246,0.36); }
+  .avatar-wrap.speaking .avatar-halo { animation-duration: 1.3s; }
+  .avatar-wrap.listening .avatar-ring { border-color: rgba(34,211,238,0.85); animation: ringPulse 1.4s ease-out infinite; }
+  .avatar-wrap.listening .avatar-face { box-shadow: 0 0 56px 10px rgba(34,211,238,0.5), 0 0 110px 24px rgba(34,211,238,0.22); }
+  .avatar-wrap.thinking .avatar-orbit-spin { animation-duration: 3s; }
+
+  .state-chip {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; padding: 4px 12px; border-radius: 999px;
+    background: var(--glass); border: 1px solid var(--border); color: var(--text-soft);
+    display: inline-flex; align-items: center; gap: 6px; min-height: 24px;
+  }
+  .state-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); }
+  .state-chip.listening { color: var(--cyan); border-color: rgba(34,211,238,0.45); }
+  .state-chip.listening .dot { background: var(--cyan); animation: blinkDot 1s infinite; }
+  .state-chip.thinking { color: var(--amber); }
+  .state-chip.thinking .dot { background: var(--amber); animation: blinkDot 0.8s infinite; }
+  .state-chip.speaking { color: #c4b5fd; border-color: rgba(167,139,250,0.45); }
+  .state-chip.speaking .dot { background: #a78bfa; animation: blinkDot 0.6s infinite; }
+  .state-chip.paused .dot { background: var(--text-faint); }
+
+  @keyframes orbSpin { to { transform: rotate(360deg); } }
+  @keyframes haloPulse { 0%, 100% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.07); } }
+  @keyframes avFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  @keyframes ringPulse { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.18); opacity: 0; } }
+  @keyframes blinkDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+  /* ---- Greeting screen ---- */
+  .greeting {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; padding: 20px; text-align: center; position: relative; z-index: 1; overflow-y: auto;
+  }
+  .greeting h1 { font-size: 1.7rem; margin: 0 0 2px; color: #fff; }
+  .greeting .sub { color: var(--text-soft); font-size: 0.92rem; margin-bottom: 22px; }
+  .tip { font-size: 0.72rem; color: var(--text-faint); margin-top: 10px; }
+
+  /* ---- Ask bar (shared) ---- */
+  .ask-shell {
+    width: 100%; max-width: 640px; background: var(--glass);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 14px 16px; backdrop-filter: blur(14px); transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .ask-shell.listening { border-color: rgba(34,211,238,0.55); box-shadow: 0 0 0 3px rgba(34,211,238,0.12), 0 0 28px rgba(34,211,238,0.15); }
+  .ask-row { display: flex; align-items: center; gap: 8px; }
+  .ask-row input[type="text"] {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: #fff; font-size: 0.92rem; padding: 8px 4px; font-family: inherit;
+  }
+  .ask-row input[type="text"]::placeholder { color: var(--text-faint); }
+  .ask-row input[type="text"]:disabled { opacity: 0.5; }
+  .ask-tools { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .pill-btn {
+    display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-soft);
+    background: var(--glass); border: 1px solid var(--border); padding: 6px 12px;
+    border-radius: 999px; cursor: pointer;
+  }
+  .pill-btn:hover { color: #fff; background: var(--glass-strong); }
+  .pill-btn.scoped { color: var(--cyan); border-color: rgba(34,211,238,0.4); background: rgba(34,211,238,0.08); }
+  .pill-btn svg { width: 14px; height: 14px; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 10px; border: none; background: transparent;
+    color: var(--text-soft); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
+  }
+  .icon-btn:hover { background: var(--glass-strong); color: #fff; }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .send-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #05060a;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1rem;
+  }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .mic-btn {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; cursor: pointer;
+    background: var(--glass-strong); border: 1px solid var(--border); color: var(--text);
+    display: flex; align-items: center; justify-content: center; position: relative;
+  }
+  .mic-btn svg { width: 18px; height: 18px; }
+  .mic-btn:hover { background: rgba(255,255,255,0.14); }
+  .mic-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .mic-btn.on { background: var(--danger); border-color: transparent; color: #fff; animation: micPulse 1.3s infinite; }
+  @keyframes micPulse { 0% { box-shadow: 0 0 0 0 rgba(248,113,113,0.55); } 100% { box-shadow: 0 0 0 12px rgba(248,113,113,0); } }
+  input[type="file"] { display: none; }
+
+  .listen-bar { display: none; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.78rem; color: var(--cyan); }
+  .listen-bar.on { display: flex; }
+  .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: blinkDot 1s infinite; flex-shrink: 0; }
+  .listen-text { flex-shrink: 0; }
+  .silence-track { flex: 1; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .silence-fill { display: block; height: 100%; width: 100%; background: linear-gradient(90deg, var(--cyan), var(--indigo)); transform-origin: left; transform: scaleX(0); }
+  .silence-fill.run { animation: silenceRun var(--ms, 2000ms) linear forwards; }
+  @keyframes silenceRun { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+  /* ---- Suggestion cards ---- */
+  .suggestions { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; justify-content: center; max-width: 620px; }
+  .suggestion-card {
+    background: var(--glass); border: 1px solid var(--border); border-radius: 14px; color: inherit;
+    padding: 14px 16px; width: 170px; cursor: pointer; text-align: left;
+  }
+  .suggestion-card:hover { background: var(--glass-strong); }
+  .suggestion-card:disabled { opacity: 0.5; cursor: not-allowed; }
+  .suggestion-card .icon {
+    width: 32px; height: 32px; border-radius: 9px; margin-bottom: 10px;
+    background: rgba(34,211,238,0.12); color: var(--cyan);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .suggestion-card .icon svg { width: 17px; height: 17px; }
+  .suggestion-card .title { font-size: 0.82rem; font-weight: 600; color: #fff; margin-bottom: 3px; }
+  .suggestion-card .desc { font-size: 0.72rem; color: var(--text-faint); line-height: 1.4; }
+
+  /* ---- Chat view ---- */
+  .chat-view { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; z-index: 1; }
+  .chat-topbar {
+    display: flex; align-items: center; gap: 10px; padding: 14px 28px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .chat-topbar .meta { flex: 1; min-width: 0; }
+  .chat-topbar .title { font-size: 0.95rem; font-weight: 700; }
+  .chat-topbar .status { font-size: 0.75rem; color: var(--text-soft); display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--good); flex-shrink: 0; }
+
+  .chat-body { flex: 1; display: flex; min-height: 0; }
+  .stage {
+    width: 310px; flex-shrink: 0; padding: 26px 18px 18px; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; gap: 14px; overflow-y: auto;
+  }
+  .caption {
+    width: 100%; min-height: 64px; max-height: 110px; overflow: hidden; text-align: center;
+    font-size: 0.82rem; line-height: 1.5; color: var(--text-soft);
+    background: rgba(0,0,0,0.28); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;
+  }
+  .caption:empty::before { content: "Captions appear here while I speak"; color: var(--text-faint); font-style: italic; font-size: 0.74rem; }
+  .caption mark { background: rgba(129,140,248,0.35); color: #fff; border-radius: 4px; padding: 0 2px; }
+
+  .player { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; }
+  .pbtn {
+    height: 34px; min-width: 34px; padding: 0 10px; border-radius: 999px; cursor: pointer;
+    background: var(--glass); border: 1px solid var(--border); color: var(--text);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.76rem; font-weight: 600;
+  }
+  .pbtn svg { width: 15px; height: 15px; }
+  .pbtn:hover:not(:disabled) { background: var(--glass-strong); }
+  .pbtn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .pbtn.main { background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #05060a; border-color: transparent; width: 40px; height: 40px; padding: 0; }
+  .pbtn.main svg { width: 17px; height: 17px; }
+  .pbtn.stop:not(:disabled) { background: rgba(248,113,113,0.16); border-color: rgba(248,113,113,0.5); color: #fecaca; }
+  .pbtn.stop:not(:disabled):hover { background: rgba(248,113,113,0.28); }
+
+  .persona { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--glass); border: 1px solid var(--border); }
+  .persona button {
+    border: none; background: transparent; color: var(--text-soft); padding: 5px 14px; border-radius: 999px;
+    font-size: 0.74rem; font-weight: 600; cursor: pointer;
+  }
+  .persona button.active { background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #05060a; }
+
+  .chat-col { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+  .chat-scroll { flex: 1; overflow-y: auto; padding: 22px 28px; display: flex; flex-direction: column; gap: 14px; }
+  .bubble-row { display: flex; max-width: 82%; flex-direction: column; gap: 4px; }
+  .bubble-row.user { align-self: flex-end; align-items: flex-end; }
+  .bubble-row.assistant, .bubble-row.system { align-self: flex-start; align-items: flex-start; }
+  .bubble2 { padding: 12px 16px; border-radius: 16px; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; max-width: 100%; }
+  .bubble-row.user .bubble2 {
+    background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #05060a;
+    border-bottom-right-radius: 4px; font-weight: 500;
+  }
+  .bubble-row.assistant .bubble2 {
+    background: var(--glass); color: var(--text); border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble-row.system .bubble2 { background: rgba(34,211,238,0.1); color: #67e8f9; font-size: 0.78rem; }
+  .bubble-time { font-size: 0.66rem; color: var(--text-faint); }
+  .status-note { font-style: italic; color: var(--text-faint); }
+  .msg-from { font-size: 0.7rem; color: var(--text-faint); }
+  .msg-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .act-btn {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--text-soft);
+    background: var(--glass); border: 1px solid var(--border); padding: 4px 10px; border-radius: 999px; cursor: pointer;
+  }
+  .act-btn svg { width: 12px; height: 12px; }
+  .act-btn:hover { color: #fff; background: var(--glass-strong); }
+
+  .chat-input-wrap { padding: 12px 28px 20px; display: flex; flex-direction: column; align-items: center; }
+  .disclaimer { font-size: 0.68rem; color: var(--text-faint); text-align: center; margin-top: 8px; }
+  .cooldown-note { font-size: 0.72rem; color: var(--amber); text-align: center; margin-top: 6px; min-height: 1em; }
+
+  /* ---- Pop menu (speed, downloads) ---- */
+  .pop-menu {
+    z-index: 100; min-width: 170px; padding: 6px; border-radius: 12px;
+    background: rgba(14,15,22,0.98); border: 1px solid var(--border); box-shadow: 0 12px 40px rgba(0,0,0,0.55);
+    display: flex; flex-direction: column;
+  }
+  .pop-menu button {
+    text-align: left; background: transparent; border: none; color: var(--text); font-size: 0.8rem;
+    padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  }
+  .pop-menu button:hover { background: var(--glass-strong); }
+  .pop-menu button.active { color: var(--cyan); font-weight: 700; }
+
+  /* ================= Drawer ================= */
+  .drawer {
+    position: fixed; top: 0; right: 0; height: 100vh; width: 380px; max-width: 90vw;
+    background: rgba(8,9,14,0.95); backdrop-filter: blur(20px);
+    border-left: 1px solid var(--border); z-index: 50;
+    transform: translateX(100%); transition: transform 0.25s ease;
+    padding: 24px 22px; overflow-y: auto;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .drawer-head h2 { font-size: 1.05rem; margin: 0; }
+  .drawer-close { width: 30px; height: 30px; border-radius: 8px; border: none; background: var(--glass); color: var(--text-soft); cursor: pointer; font-size: 0.95rem; }
+  .drawer-close:hover { background: var(--glass-strong); color: #fff; }
+  .drawer-sub { font-size: 0.78rem; color: var(--text-soft); margin-bottom: 18px; }
+
+  .card { background: var(--glass); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 12px; }
+  .card h3 { margin: 0 0 6px; font-size: 0.88rem; }
+  .card p { font-size: 0.8rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+
+  .doc-row { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 10px; cursor: pointer; }
+  .doc-row:hover { background: var(--glass); }
+  .doc-row.active-row { background: rgba(34,211,238,0.1); }
+  .doc-icon { width: 28px; height: 28px; border-radius: 7px; background: rgba(34,211,238,0.12); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+  .doc-name { font-size: 0.84rem; font-weight: 500; flex: 1; min-width: 0; }
+  .doc-meta { font-size: 0.7rem; color: var(--text-faint); white-space: nowrap; }
+
+  .eval-question { font-size: 0.84rem; color: var(--text-soft); font-style: italic; margin-bottom: 10px; }
+  .eval-mode-pill { display: inline-block; font-size: 0.68rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; margin-bottom: 10px; }
+  .eval-mode-pill.semantic_topk { background: rgba(34,211,238,0.14); color: var(--cyan); }
+  .eval-mode-pill.full_document { background: rgba(129,140,248,0.16); color: var(--indigo); }
+  .eval-mode-pill.none { background: var(--glass); color: var(--text-soft); }
+  .conf-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--border); }
+  .conf-row:first-of-type { border-top: none; }
+  .conf-label { flex: 1; font-size: 0.78rem; color: var(--text-soft); }
+  .conf-bar-track { width: 110px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; flex-shrink: 0; }
+  .conf-bar-fill { height: 100%; border-radius: 999px; background: var(--cyan); }
+  .conf-pct { width: 40px; text-align: right; font-size: 0.76rem; font-weight: 600; color: var(--text-soft); flex-shrink: 0; }
+  .avg-confidence { font-size: 1.5rem; font-weight: 700; color: #fff; }
+  .avg-confidence-label { font-size: 0.75rem; color: var(--text-soft); }
+
+  .setting-btn {
+    font-size: 0.82rem; font-weight: 500; padding: 9px 16px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--glass); color: var(--text); cursor: pointer;
+  }
+  .setting-btn:hover { background: var(--glass-strong); }
+  .setting-btn.active { background: linear-gradient(135deg, var(--cyan), var(--indigo)); color: #05060a; border-color: transparent; }
+  .setting-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  select.setting-select {
+    width: 100%; background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border);
+    border-radius: 9px; padding: 9px 10px; font-size: 0.8rem; font-family: inherit;
+  }
+  select.setting-select option { background: #11121a; color: #fff; }
+  input[type="range"] { width: 100%; accent-color: #818cf8; }
+  .range-label { font-size: 0.78rem; color: var(--cyan); font-weight: 600; margin-bottom: 6px; }
+
+  @media (max-width: 900px) {
+    .chat-body { flex-direction: column; }
+    .stage { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 10px 14px; border-right: none; border-bottom: 1px solid var(--border); gap: 10px; max-height: 190px; }
+    .stage .avatar-slot { --av: 92px; flex-direction: row; }
+    .stage .state-chip { display: none; }
+    .caption { display: none; }
+    .chat-scroll { padding: 14px; }
+    .chat-input-wrap { padding: 10px 14px 16px; }
+    .chat-topbar { padding: 12px 14px; }
+  }
+  @media (max-width: 720px) {
+    .rail { width: 56px; }
+    .drawer { width: 100vw; }
+  }
+</style>
+</head>
+<body>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#22d3ee"/>
+        <stop offset="0.55" stop-color="#818cf8"/>
+        <stop offset="1" stop-color="#c084fc"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <nav class="rail">
+    <div class="rail-logo" title="Folio" aria-label="Folio">
+      <svg viewBox="0 0 24 24" stroke="url(#logoGrad)" aria-hidden="true"><path d="M6 16c5 0 7-8 12-8a4 4 0 0 1 0 8c-5 0-7-8-12-8a4 4 0 1 0 0 8"/></svg>
+    </div>
+    <button class="rail-btn active" id="railHome" title="Chat" aria-label="Chat">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </button>
+    <button class="rail-btn" id="railDocs" title="Knowledge base" aria-label="Knowledge base">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    </button>
+    <button class="rail-btn" id="railEval" title="Evaluation runs" aria-label="Evaluation runs">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+    </button>
+    <button class="rail-btn" id="railHistory" title="History" aria-label="History">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+    </button>
+    <div class="rail-spacer"></div>
+    <button class="rail-btn" id="railSettings" title="Settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <div class="rail-avatar" title="You">V</div>
+  </nav>
+
+  <main class="main">
+    <div class="bg-glow"></div>
+
+    <!-- ===== Greeting (shown when there's no conversation yet) ===== -->
+    <section class="greeting" id="greetingView">
+      <div class="avatar-slot" id="greetSlot">
+        <div class="avatar-wrap" id="avatarWrapReal">
+          <div class="avatar-halo"></div>
+          <div class="avatar-orbit"><div class="avatar-orbit-spin"><span class="d1"></span><span class="d2"></span></div></div>
+          <div class="avatar-face" id="avatarFace"></div>
+          <div class="avatar-ring"></div>
+        </div>
+        <div class="state-chip" id="stateChip"><span class="dot"></span><span id="stateText">Ready</span></div>
+      </div>
+      <h1 class="brand-font" id="greetName">Hi, Vibeena</h1>
+      <div class="sub">Ask me anything about your uploaded documents. Type, or tap the mic and just talk.</div>
+
+      <div class="ask-shell" id="shellGreeting">
+        <div class="listen-bar" id="listenBarGreeting"><span class="rec-dot"></span><span class="listen-text">Listening… pause when you're done</span><span class="silence-track"><span class="silence-fill"></span></span></div>
+        <div class="ask-row">
+          <input type="text" id="questionInputGreeting" placeholder="Ask me anything about your documents…" />
+          <button class="mic-btn" id="micBtnGreeting" title="Talk to me" aria-label="Voice input">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+          </button>
+          <button class="send-btn" id="askBtnGreeting" aria-label="Ask">➤</button>
+        </div>
+        <div class="ask-tools">
+          <button class="pill-btn" id="attachBtnGreeting">📎 Import file</button>
+          <button class="pill-btn" id="scopePillGreeting">🗂 All documents</button>
+        </div>
+      </div>
+      <div class="tip">Voice input waits until you stop talking. Press Esc any time to interrupt me.</div>
+
+      <div class="suggestions">
+        <button class="suggestion-card" data-q="Summarize this document.">
+          <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg></div>
+          <div class="title">Summarise</div>
+          <div class="desc">Get a quick summary of a document</div>
+        </button>
+        <button class="suggestion-card" data-q="How many images and tables are in this document?">
+          <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg></div>
+          <div class="title">Count elements</div>
+          <div class="desc">Count images, tables, or pages exactly</div>
+        </button>
+        <button class="suggestion-card" data-q="Explain the overall structure of this document.">
+          <div class="icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg></div>
+          <div class="title">Explain structure</div>
+          <div class="desc">Walk through how it's organized</div>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== Chat view (shown once a conversation starts) ===== -->
+    <section class="chat-view" id="chatView" style="display:none;">
+      <div class="chat-topbar">
+        <div class="meta">
+          <div class="title">AI Assistant</div>
+          <div class="status"><span class="status-dot"></span><span id="scopeLabel">Searching all documents</span></div>
+        </div>
+        <button class="pill-btn" id="exportBtn" title="Download this whole conversation">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          Download
+        </button>
+        <button class="icon-btn" id="voiceToggleBtn" title="Voice narration on/off">🔊</button>
+        <button class="pill-btn" id="newSessionBtn">✎ New session</button>
+      </div>
+
+      <div class="chat-body">
+        <aside class="stage">
+          <div class="avatar-slot" id="stageSlot"></div>
+          <div class="caption" id="caption"></div>
+          <div class="player" id="player">
+            <button class="pbtn" id="btnPrev" title="Previous sentence" disabled><svg class="ico" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" x2="5" y1="19" y2="5"/></svg></button>
+            <button class="pbtn main" id="btnPlayPause" title="Play / pause"><svg class="ico ico-fill" viewBox="0 0 24 24" id="ppIcon"><polygon points="6 4 20 12 6 20 6 4"/></svg></button>
+            <button class="pbtn" id="btnNext" title="Next sentence" disabled><svg class="ico" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg></button>
+            <button class="pbtn stop" id="btnStop" title="Stop speaking (Esc)" disabled><svg class="ico ico-fill" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>Stop</button>
+            <button class="pbtn" id="speedBtn" title="Speaking speed">1×</button>
+          </div>
+          <div class="persona" id="persona">
+            <button data-g="female" class="active">Female</button>
+            <button data-g="male">Male</button>
+          </div>
+        </aside>
+
+        <div class="chat-col">
+          <div class="chat-scroll" id="conversation"></div>
+
+          <div class="chat-input-wrap">
+            <div class="ask-shell" id="shellChat">
+              <div class="listen-bar" id="listenBarChat"><span class="rec-dot"></span><span class="listen-text">Listening… pause when you're done</span><span class="silence-track"><span class="silence-fill"></span></span></div>
+              <div class="ask-row">
+                <input type="text" id="questionInput" placeholder="Ask a question about your documents…" />
+                <button class="mic-btn" id="micBtn" title="Talk to me" aria-label="Voice input">
+                  <svg class="ico" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                </button>
+                <button class="send-btn" id="askBtn" aria-label="Ask">➤</button>
+              </div>
+              <div class="ask-tools">
+                <button class="pill-btn" id="attachBtn">📎 Import file</button>
+                <button class="pill-btn" id="scopePill">🗂 All documents</button>
+              </div>
+            </div>
+            <div class="cooldown-note" id="cooldownNote"></div>
+            <div class="disclaimer">AI can make mistakes. Verify important information.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <input type="file" id="fileInput" accept="application/pdf" />
+  </main>
+
+  <!-- ===== Knowledge base drawer ===== -->
+  <div class="drawer" id="docsDrawer">
+    <div class="drawer-head"><h2 class="brand-font">Knowledge Base</h2><button class="drawer-close" data-close>✕</button></div>
+    <div class="drawer-sub" id="scopeNote">Asking across all indexed documents</div>
+    <div id="docsList"><div class="card"><p>Loading indexed documents…</p></div></div>
+  </div>
+
+  <!-- ===== Evaluation drawer ===== -->
+  <div class="drawer" id="evalDrawer">
+    <div class="drawer-head"><h2 class="brand-font">Evaluation Runs</h2><button class="drawer-close" data-close>✕</button></div>
+    <div class="drawer-sub">Retrieval confidence per question</div>
+    <div id="evalContent"><div class="card"><p>Ask a question to see how confidently each source matched it.</p></div></div>
+  </div>
+
+  <!-- ===== History drawer ===== -->
+  <div class="drawer" id="historyDrawer">
+    <div class="drawer-head"><h2 class="brand-font">History</h2><button class="drawer-close" data-close>✕</button></div>
+    <div class="drawer-sub">Every question you've asked, most recent first</div>
+    <div id="historyContent"><div class="card"><p>No questions asked yet.</p></div></div>
+  </div>
+
+  <!-- ===== Settings drawer ===== -->
+  <div class="drawer" id="settingsDrawer">
+    <div class="drawer-head"><h2 class="brand-font">Settings</h2><button class="drawer-close" data-close>✕</button></div>
+    <div class="drawer-sub">Assistant, voice and session data</div>
+
+    <div class="card">
+      <h3>Assistant</h3>
+      <p style="margin-bottom:12px;">Choose who talks to you. The voice switches to match.</p>
+      <div class="setting-row">
+        <button class="setting-btn" id="setFemale">Female</button>
+        <button class="setting-btn" id="setMale">Male</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Voice narration</h3>
+      <p style="margin-bottom:12px;">The assistant reads each answer aloud while the avatar speaks.</p>
+      <div class="setting-row" style="margin-bottom:12px;">
+        <button class="setting-btn" id="voiceOnBtn">🔊 Voice on</button>
+        <button class="setting-btn" id="voiceOffBtn">🔇 Voice off</button>
+      </div>
+      <p style="margin-bottom:6px;">Voice</p>
+      <select class="setting-select" id="voiceSelect"></select>
+      <p style="margin:14px 0 6px;">Speaking speed</p>
+      <div class="range-label" id="rateLabel">1×</div>
+      <input type="range" id="rateRange" min="0.5" max="2" step="0.25" value="1" />
+    </div>
+
+    <div class="card">
+      <h3>Voice input</h3>
+      <p style="margin-bottom:12px;">After you stop talking, I wait this long before answering, so I never cut you off.</p>
+      <div class="range-label" id="silenceLabel">2.0 s</div>
+      <input type="range" id="silenceRange" min="1" max="5" step="0.5" value="2" />
+      <p style="margin:14px 0 8px;">Hands-free conversation: after I finish speaking, start listening again automatically.</p>
+      <div class="setting-row">
+        <button class="setting-btn" id="hfOnBtn">On</button>
+        <button class="setting-btn" id="hfOffBtn">Off</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Session data</h3>
+      <p style="margin-bottom:12px;">Your conversation, evaluation, and question history are saved in this browser.</p>
+      <button class="setting-btn" id="clearHistoryBtn">🗑 Clear saved history</button>
+    </div>
+  </div>
+
+<script>
+  const API_BASE = "";
+  const DISPLAY_NAME = "Vibeena"; // change this if you want a different greeting name
+  const MIN_SECONDS_BETWEEN_ASKS = 3; // client-side pacing to avoid tripping the free-tier per-minute limit
+  const TOP_K = 6;                    // how many evidence chunks to retrieve per question
+  const RATES = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+  // ---------- Elements ----------
+  const $ = id => document.getElementById(id);
+  const greetingView = $("greetingView");
+  const chatView = $("chatView");
+  const conversation = $("conversation");
+  const greetSlot = $("greetSlot");
+  const stageSlot = $("stageSlot");
+  const avatarWrapEl = $("avatarWrapReal");
+  const avatarFace = $("avatarFace");
+  const stateChip = $("stateChip");
+  const stateText = $("stateText");
+  const captionEl = $("caption");
+
+  const questionInputGreeting = $("questionInputGreeting");
+  const askBtnGreeting = $("askBtnGreeting");
+  const micBtnGreeting = $("micBtnGreeting");
+  const attachBtnGreeting = $("attachBtnGreeting");
+  const scopePillGreeting = $("scopePillGreeting");
+
+  const questionInput = $("questionInput");
+  const askBtn = $("askBtn");
+  const micBtn = $("micBtn");
+  const attachBtn = $("attachBtn");
+  const scopePill = $("scopePill");
+  const scopeLabel = $("scopeLabel");
+  const newSessionBtn = $("newSessionBtn");
+  const voiceToggleBtn = $("voiceToggleBtn");
+  const exportBtn = $("exportBtn");
+  const cooldownNote = $("cooldownNote");
+  const fileInput = $("fileInput");
+
+  const btnPrev = $("btnPrev"), btnNext = $("btnNext"), btnPlayPause = $("btnPlayPause");
+  const btnStop = $("btnStop"), speedBtn = $("speedBtn"), ppIcon = $("ppIcon");
+
+  const railHome = $("railHome"), railDocs = $("railDocs"), railEval = $("railEval");
+  const railHistory = $("railHistory"), railSettings = $("railSettings");
+  const docsDrawer = $("docsDrawer"), evalDrawer = $("evalDrawer");
+  const historyDrawer = $("historyDrawer"), settingsDrawer = $("settingsDrawer");
+  const scopeNote = $("scopeNote"), docsList = $("docsList");
+  const evalContent = $("evalContent"), historyContent = $("historyContent");
+  const voiceOnBtn = $("voiceOnBtn"), voiceOffBtn = $("voiceOffBtn");
+  const clearHistoryBtn = $("clearHistoryBtn");
+  const setFemale = $("setFemale"), setMale = $("setMale");
+  const voiceSelect = $("voiceSelect");
+  const rateRange = $("rateRange"), rateLabel = $("rateLabel");
+  const silenceRange = $("silenceRange"), silenceLabel = $("silenceLabel");
+  const hfOnBtn = $("hfOnBtn"), hfOffBtn = $("hfOffBtn");
+
+  // The two ask bars share one set of behaviours.
+  const bars = {
+    greeting: { input: questionInputGreeting, send: askBtnGreeting, mic: micBtnGreeting, shell: $("shellGreeting"), listen: $("listenBarGreeting") },
+    chat:     { input: questionInput,        send: askBtn,         mic: micBtn,         shell: $("shellChat"),     listen: $("listenBarChat") },
+  };
+
+  // ---------- State ----------
+  let knownDocuments = [];
+  let activeScope = null;
+  let evaluationHistory = [];
+  let qaHistory = [];
+  let savedMessages = [];
+
+  // Guards: no second /ask while one is in flight, and a minimum gap between asks.
+  // Both the button, the Enter key and the voice path go through askQuestion().
+  let isAsking = false;
+  let lastAskAt = 0;
+
+  const STORAGE_KEYS = {
+    messages: "folio_messages", evaluation: "folio_evaluation", qaHistory: "folio_qa_history",
+    scope: "folio_scope", voice: "folio_voice", settings: "folio_settings",
+  };
+
+  const DEFAULT_SETTINGS = { gender: "female", rate: 1, voiceURI: "", silenceSec: 2, handsFree: false };
+  let settings = { ...DEFAULT_SETTINGS };
+  try { settings = { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(STORAGE_KEYS.settings) || "{}") }; } catch (e) {}
+  function saveSettings() { try { localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings)); } catch (e) {} }
+
+  function timeNow() { return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+  function escapeHtml(s) {
+    return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  $("greetName").textContent = `Hi, ${DISPLAY_NAME}`;
+
+  // =====================================================================
+  //  Answer cleanup — no ###, ---, **bold**, [1] markers, "Sources:" line
+  //  or page numbers in what the user sees, hears or downloads.
+  // =====================================================================
+  function cleanAnswer(raw, opts = {}) {
+    const original = String(raw ?? "").trim();
+    let t = original.replace(/\r/g, "");
+    t = t.replace(/\n?\s*Sources?:\s*\[[^\]]*\]\s*$/i, "");              // trailing "Sources: [1, 2]"
+    t = t.replace(/\[Sources?\s*\d+[^\]]*\]/gi, "");                      // "[Source 1: document=..., page=2]"
+    t = t.replace(/^[ \t]{0,3}#{1,6}[ \t]*/gm, "");                       // ### headings
+    t = t.replace(/^[ \t]*(?:[-*_=][ \t]*){3,}$/gm, "");                  // --- *** ___ horizontal rules
+    t = t.replace(/\*\*([^*]+)\*\*/g, "$1").replace(/__([^_]+)__/g, "$1"); // bold
+    t = t.replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:!?]|$)/g, "$1$2");    // italics
+    t = t.replace(/`([^`]+)`/g, "$1");                                    // inline code
+    t = t.replace(/^[ \t]*[*+-][ \t]+/gm, "• ");                          // bullets -> •
+    t = t.replace(/\s*\[\d+(?:\s*[,;–-]\s*\d+)*\]/g, "");                 // [1] [2, 3] citation markers
+    if (!opts.keepPages) {
+      const num = "\\d+(?:\\s*(?:-|–|to|and|&|,)\\s*\\d+)*";
+      // whole sentences that only point at a page ("See page 4 for details.")
+      t = t.replace(new RegExp("(^|[.!?]\\s+|\\n)\\s*(?:see|refer to|check|look at)\\s+(?:also\\s+)?pages?\\s+" + num + "[^.!?\\n]*[.!?]?", "gi"), "$1");
+      t = t.replace(new RegExp("\\s*[(\\[]\\s*(?:see\\s+)?(?:on\\s+)?(?:pages?|pp?\\.?)\\s*" + num + "\\s*[)\\]]", "gi"), "");
+      t = t.replace(new RegExp("\\s*\\b(?:on|in|at|from|see|of)\\s+pages?\\s+" + num, "gi"), "");
+      t = t.replace(new RegExp("\\s*\\bpages?\\s+" + num, "gi"), "");
+      t = t.replace(/\s*\bpp?\.\s*\d+(?:\s*[-–]\s*\d+)?/gi, "");
+    }
+    t = t.replace(/[ \t]+([.,;:!?])/g, "$1");
+    t = t.replace(/[ \t]{2,}/g, " ");
+    t = t.replace(/^[ \t]+|[ \t]+$/gm, "");
+    t = t.replace(/\n{3,}/g, "\n\n");
+    t = t.trim();
+    return t || original;
+  }
+
+  function uniqueDocs(citations) {
+    return [...new Set((citations || []).map(c => c.document_id).filter(Boolean))];
+  }
+
+  // =====================================================================
+  //  Avatar — a drawn face (female / male) with eyes, brows, blinking,
+  //  gaze, head movement and a mouth that follows the words being spoken.
+  // =====================================================================
+  function avatarSVG(g) {
+    const F = g === "female";
+    const C = F ? {
+      skinA: "#fadccb", skinB: "#e9ad90", hairA: "#5a3390", hairB: "#1d1038", hairHi: "#b58be8",
+      clothA: "#22d3ee", clothB: "#6366f1", brow: "#2a1840", blush: 0.34, iris1: "#8be3f5", iris2: "#1b6f90",
+    } : {
+      skinA: "#f0c9ab", skinB: "#d49c78", hairA: "#4a4266", hairB: "#17131f", hairHi: "#8077b0",
+      clothA: "#6366f1", clothB: "#1e1b4b", brow: "#1c1626", blush: 0.12, iris1: "#a8855a", iris2: "#4a3320",
+    };
+
+    const hairBack = F ? `<path d="M64 120 C54 58 92 30 120 30 C148 30 186 58 176 120 C181 170 179 218 170 258 L70 258 C61 218 59 170 64 120 Z" fill="url(#avHair)"/>` : "";
+    const neck = F
+      ? `<path d="M105 180 L105 216 C105 228 92 234 78 240 L162 240 C148 234 135 228 135 216 L135 180 Z" fill="url(#avNeck)"/>`
+      : `<path d="M101 180 L101 216 C101 228 88 234 72 240 L168 240 C152 234 139 228 139 216 L139 180 Z" fill="url(#avNeck)"/>`;
+    const body = F
+      ? `<path d="M18 282 C22 246 62 230 94 224 C106 237 134 237 146 224 C178 230 218 246 222 282 Z" fill="url(#avCloth)"/>
+         <path d="M94 224 C106 237 134 237 146 224" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2"/>`
+      : `<path d="M4 282 C8 244 56 228 92 223 C106 237 134 237 148 223 C184 228 232 244 236 282 Z" fill="url(#avCloth)"/>
+         <path d="M96 224 L120 266 L144 224 C134 237 106 237 96 224Z" fill="#e9e7f6"/>
+         <path d="M92 223 L116 276 M148 223 L124 276" stroke="rgba(255,255,255,.22)" stroke-width="2" fill="none"/>`;
+    const facePath = F
+      ? "M72 118 C72 76 94 54 120 54 C146 54 168 76 168 118 C168 156 148 188 120 190 C92 188 72 156 72 118 Z"
+      : "M69 116 C69 74 92 54 120 54 C148 54 171 74 171 116 C171 156 152 192 120 194 C88 192 69 156 69 116 Z";
+    const ears = F
+      ? `<ellipse cx="72" cy="126" rx="7.5" ry="11" fill="${C.skinB}"/><ellipse cx="168" cy="126" rx="7.5" ry="11" fill="${C.skinB}"/>`
+      : `<ellipse cx="70" cy="126" rx="9" ry="13" fill="${C.skinB}"/><ellipse cx="170" cy="126" rx="9" ry="13" fill="${C.skinB}"/>`;
+    const jawShade = F ? "" : `<path d="M75 142 C81 178 100 193 120 195 C140 193 159 178 165 142 C158 170 142 184 120 185 C98 184 82 170 75 142Z" fill="rgba(60,35,35,.16)"/>`;
+    const lash = F ? 2.8 : 2.3;
+    const eye = (cx, id, irisId, side) => `
+      <g id="${id}">
+        <ellipse cx="${cx}" cy="119" rx="11.5" ry="7.8" fill="#fff"/>
+        <g id="${irisId}">
+          <circle cx="${cx}" cy="119" r="6" fill="url(#avIris)"/>
+          <circle cx="${cx}" cy="119" r="2.8" fill="#0b0b12"/>
+          <circle cx="${cx + 2}" cy="117" r="1.6" fill="#fff" opacity=".92"/>
+        </g>
+        <path d="M${cx - 12.5} 118 Q${cx} 108 ${cx + 12.5} 118" fill="none" stroke="#1a1020" stroke-width="${lash}" stroke-linecap="round"/>
+        ${F ? `<path d="M${side > 0 ? cx + 11 : cx - 11} 116.5 L${side > 0 ? cx + 15.5 : cx - 15.5} 112.5" stroke="#1a1020" stroke-width="2" stroke-linecap="round" fill="none"/>` : ""}
+      </g>`;
+    const brows = F
+      ? `<path id="avBrowL" d="M83 102 Q98 93 113 100" fill="none" stroke="${C.brow}" stroke-width="2.8" stroke-linecap="round"/>
+         <path id="avBrowR" d="M127 100 Q142 93 157 102" fill="none" stroke="${C.brow}" stroke-width="2.8" stroke-linecap="round"/>`
+      : `<path id="avBrowL" d="M82 103 Q98 96 114 101" fill="none" stroke="${C.brow}" stroke-width="5" stroke-linecap="round"/>
+         <path id="avBrowR" d="M126 101 Q142 96 158 103" fill="none" stroke="${C.brow}" stroke-width="5" stroke-linecap="round"/>`;
+    const hairFront = F
+      ? `<path d="M62 124 C52 66 88 34 124 34 C160 36 188 72 178 126 C176 100 164 82 146 74 C132 68 112 74 96 84 C80 94 68 106 62 124 Z" fill="url(#avHair)"/>
+         <path d="M92 56 C110 44 140 44 156 58" fill="none" stroke="${C.hairHi}" stroke-width="3" stroke-linecap="round" opacity=".4"/>
+         <path d="M64 120 C58 152 62 198 78 236 L92 236 C78 198 76 152 76 124 Z" fill="url(#avHair)"/>
+         <path d="M176 120 C182 152 178 198 162 236 L148 236 C162 198 164 152 164 124 Z" fill="url(#avHair)"/>
+         <circle cx="72" cy="142" r="2.8" fill="#67e8f9"/><circle cx="168" cy="142" r="2.8" fill="#67e8f9"/>`
+      : `<path d="M66 114 C60 64 90 40 124 40 C158 40 184 66 174 114 C172 96 164 82 150 76 C138 72 124 74 112 72 C96 70 80 78 74 94 C70 102 68 108 66 114 Z" fill="url(#avHair)"/>
+         <path d="M96 52 C112 44 140 46 154 56" fill="none" stroke="${C.hairHi}" stroke-width="3" stroke-linecap="round" opacity=".35"/>
+         <path d="M68 112 L72 142 L79 130 L77 106 Z" fill="url(#avHair)"/><path d="M172 112 L168 142 L161 130 L163 106 Z" fill="url(#avHair)"/>`;
+
+    return `
+<svg viewBox="4 22 232 232" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI assistant avatar">
+<defs>
+  <radialGradient id="avBg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#2d3fa6"/><stop offset=".55" stop-color="#1a1356"/><stop offset="1" stop-color="#090720"/></radialGradient>
+  <linearGradient id="avSkin" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="${C.skinA}"/><stop offset="1" stop-color="${C.skinB}"/></linearGradient>
+  <linearGradient id="avNeck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.skinB}"/><stop offset="1" stop-color="${C.skinA}"/></linearGradient>
+  <linearGradient id="avHair" x1="0.1" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="${C.hairA}"/><stop offset="1" stop-color="${C.hairB}"/></linearGradient>
+  <linearGradient id="avCloth" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${C.clothA}"/><stop offset="1" stop-color="${C.clothB}"/></linearGradient>
+  <linearGradient id="avRing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset=".5" stop-color="#818cf8"/><stop offset="1" stop-color="#f472b6"/></linearGradient>
+  <radialGradient id="avIris" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="${C.iris1}"/><stop offset="1" stop-color="${C.iris2}"/></radialGradient>
+  <radialGradient id="avCheek"><stop offset="0" stop-color="#ff6f91" stop-opacity="${C.blush}"/><stop offset="1" stop-color="#ff6f91" stop-opacity="0"/></radialGradient>
+  <clipPath id="avDisc"><circle cx="120" cy="138" r="113"/></clipPath>
+  <clipPath id="avMouthClip"><path id="avClipPath" d=""/></clipPath>
+</defs>
+<circle cx="120" cy="138" r="113" fill="url(#avBg)"/>
+<g clip-path="url(#avDisc)">
+  ${hairBack}
+  ${neck}
+  ${body}
+  <ellipse cx="120" cy="197" rx="27" ry="9" fill="rgba(60,20,30,.2)"/>
+  <g id="avHead">
+    ${ears}
+    <path d="${facePath}" fill="url(#avSkin)"/>
+    ${jawShade}
+    <ellipse cx="112" cy="80" rx="26" ry="13" fill="#fff" opacity=".09"/>
+    <ellipse cx="88" cy="148" rx="15" ry="10" fill="url(#avCheek)"/>
+    <ellipse cx="152" cy="148" rx="15" ry="10" fill="url(#avCheek)"/>
+    <path d="M120 126 C118 138 113 144 116 149 C118 152 122 152 124 149 C127 144 122 138 120 126" fill="none" stroke="rgba(120,60,40,.3)" stroke-width="1.6" stroke-linecap="round"/>
+    ${eye(98, "avEyeL", "avIrisL", -1)}
+    ${eye(142, "avEyeR", "avIrisR", 1)}
+    ${brows}
+    <path id="avCavity" d="" fill="#4a1224"/>
+    <ellipse id="avTongue" cx="120" cy="166" rx="6" ry="1" fill="#d4607a" clip-path="url(#avMouthClip)"/>
+    <rect id="avTeeth" x="103" y="160" width="34" height="4" fill="#fffaf5" clip-path="url(#avMouthClip)"/>
+    <path id="avLipU" d="" fill="${F ? "#d24a74" : "#b0645a"}"/>
+    <path id="avLipL" d="" fill="${F ? "#e5668d" : "#c27a6c"}"/>
+    ${hairFront}
+  </g>
+</g>
+<circle cx="120" cy="138" r="112" fill="none" stroke="url(#avRing)" stroke-width="2.2" opacity=".9"/>
+</svg>`;
+  }
+
+  const avatar = {
+    gender: settings.gender,
+    refs: {},
+    mode: "idle",                       // idle | listening | thinking | speaking | paused
+    mouth: { open: 0, round: 0, smile: 1 },
+    blink: 1, blinkTarget: 1, nextBlinkAt: 0, blinkReleaseAt: 0,
+    gaze: { x: 0, y: 0, tx: 0, ty: 0, nextAt: 0 },
+    brow: 0, browTarget: 0,
+  };
+
+  function renderAvatar() {
+    avatarFace.innerHTML = avatarSVG(avatar.gender);
+    const q = id => avatarFace.querySelector("#" + id);
+    avatar.refs = {
+      head: q("avHead"), eyeL: q("avEyeL"), eyeR: q("avEyeR"), irisL: q("avIrisL"), irisR: q("avIrisR"),
+      browL: q("avBrowL"), browR: q("avBrowR"), cavity: q("avCavity"), clip: q("avClipPath"),
+      teeth: q("avTeeth"), tongue: q("avTongue"), lipU: q("avLipU"), lipL: q("avLipL"),
+    };
+    applyAvatar(performance.now());
+  }
+
+  // Mouth shape from three numbers: open (0-1), round (0 = wide, 1 = "oo"), smile (corner lift)
+  function mouthGeometry(m, female) {
+    const cx = 120, cy = 164;
+    const hw = 17 - 7.5 * m.round;
+    const cornerY = cy - m.smile * 2.4;
+    const openH = m.open * (15 - 3 * m.round);
+    const upPeak = cy - 1.2 - openH * 0.1;
+    const loPeak = upPeak + openH + 0.7;
+    const cuY = 2 * upPeak - cornerY;
+    const clY = 2 * loPeak - cornerY;
+    const L = cx - hw, R = cx + hw;
+    const thU = female ? 2.6 : 2.0, thL = female ? 3.8 : 3.0;
+    const f = n => n.toFixed(2);
+    const cav = `M${f(L)} ${f(cornerY)}Q${cx} ${f(cuY)} ${f(R)} ${f(cornerY)}Q${cx} ${f(clY)} ${f(L)} ${f(cornerY)}Z`;
+    const lipU = `M${f(L)} ${f(cornerY)}Q${cx} ${f(cuY - 2 * thU)} ${f(R)} ${f(cornerY)}Q${cx} ${f(cuY)} ${f(L)} ${f(cornerY)}Z`;
+    const lipL = `M${f(L)} ${f(cornerY)}Q${cx} ${f(clY)} ${f(R)} ${f(cornerY)}Q${cx} ${f(clY + 2 * thL)} ${f(L)} ${f(cornerY)}Z`;
+    return {
+      cav, lipU, lipL,
+      teeth: { x: L, y: upPeak - 2, w: 2 * hw, h: Math.min(openH * 0.55, 5.5) + 2, o: clamp(openH / 4, 0, 1) * (1 - m.round * 0.7) },
+      tongue: { cx, cy: loPeak - 2.2, rx: hw * 0.55, ry: Math.max(0.1, openH * 0.32), o: clamp(openH / 6, 0, 1) },
+    };
+  }
+
+  function applyAvatar(now) {
+    const r = avatar.refs;
+    if (!r.head) return;
+    const g = mouthGeometry(avatar.mouth, avatar.gender === "female");
+    r.cavity.setAttribute("d", g.cav);
+    r.clip.setAttribute("d", g.cav);
+    r.lipU.setAttribute("d", g.lipU);
+    r.lipL.setAttribute("d", g.lipL);
+    r.teeth.setAttribute("x", g.teeth.x); r.teeth.setAttribute("y", g.teeth.y);
+    r.teeth.setAttribute("width", g.teeth.w); r.teeth.setAttribute("height", g.teeth.h);
+    r.teeth.setAttribute("opacity", g.teeth.o);
+    r.tongue.setAttribute("cy", g.tongue.cy); r.tongue.setAttribute("rx", g.tongue.rx);
+    r.tongue.setAttribute("ry", g.tongue.ry); r.tongue.setAttribute("opacity", g.tongue.o);
+
+    const b = avatar.blink, by = 119 * (1 - b);
+    const blinkT = `translate(0 ${by.toFixed(2)}) scale(1 ${b.toFixed(3)})`;
+    r.eyeL.setAttribute("transform", blinkT); r.eyeR.setAttribute("transform", blinkT);
+    const gz = `translate(${avatar.gaze.x.toFixed(2)} ${avatar.gaze.y.toFixed(2)})`;
+    r.irisL.setAttribute("transform", gz); r.irisR.setAttribute("transform", gz);
+
+    const bt = `translate(0 ${(-avatar.brow * 3.4).toFixed(2)})`;
+    r.browL.setAttribute("transform", bt); r.browR.setAttribute("transform", bt);
+
+    const t = now / 1000;
+    let rot = Math.sin(t * 0.7) * 0.6, tx = 0, ty = 0;
+    if (avatar.mode === "speaking") { rot = Math.sin(t * 1.6) * 1.8 + Math.sin(t * 3.1) * 0.5; ty = Math.sin(t * 2.4) * 0.8; }
+    else if (avatar.mode === "listening") { rot = 4.5 + Math.sin(t * 1.1) * 0.8; tx = 1.2; }
+    else if (avatar.mode === "thinking") { rot = -3.5 + Math.sin(t * 1.5) * 0.7; }
+    r.head.setAttribute("transform", `rotate(${rot.toFixed(2)} 120 205) translate(${tx} ${ty.toFixed(2)})`);
+  }
+
+  // ---- lip-sync driver ----
+  const lip = { word: "", wordStart: 0, msPerChar: 70, lastBoundary: 0 };
+  const VISEMES = {
+    a: [.85, .05], e: [.55, 0], i: [.32, 0], o: [.72, .85], u: [.45, 1], y: [.3, 0], w: [.25, .95], q: [.25, .9],
+    b: [0, .1], m: [0, .1], p: [0, .1], f: [.1, 0], v: [.1, 0], l: [.3, 0], t: [.25, 0], d: [.25, 0], n: [.22, 0],
+    s: [.15, 0], z: [.15, 0], c: [.2, 0], k: [.25, 0], g: [.25, 0], r: [.25, .35], h: [.35, 0], j: [.2, .3], x: [.2, 0],
+  };
+
+  function mouthTarget(now) {
+    if (avatar.mode === "speaking") {
+      if (now - lip.lastBoundary < 1500) {                       // real word timing from the voice
+        const i = Math.floor((now - lip.wordStart) / lip.msPerChar);
+        if (lip.word && i < lip.word.length) {
+          const v = VISEMES[lip.word[i]] || [.25, 0];
+          return { open: v[0], round: v[1], smile: 0.45 };
+        }
+        return { open: 0.05, round: 0, smile: 0.7 };              // gap between words
+      }
+      const t = now / 1000;                                       // voice gives no word events: simulate speech
+      const gate = Math.sin(t * 2.6) > -0.8 ? 1 : 0.1;
+      return { open: (0.18 + 0.55 * Math.abs(Math.sin(t * 7.3 + Math.sin(t * 1.9)))) * gate, round: Math.max(0, Math.sin(t * 3.3 + 1)) * 0.7, smile: 0.45 };
+    }
+    if (avatar.mode === "listening") return { open: 0, round: 0, smile: 1.5 };
+    if (avatar.mode === "thinking") return { open: 0, round: 0.3, smile: 0.1 };
+    return { open: 0, round: 0, smile: 1 };
+  }
+
+  let lastFrame = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - lastFrame) / 1000); lastFrame = now;
+    const tg = mouthTarget(now), k = 1 - Math.exp(-dt * 22), m = avatar.mouth;
+    m.open += (tg.open - m.open) * k; m.round += (tg.round - m.round) * k; m.smile += (tg.smile - m.smile) * k;
+
+    if (now > avatar.nextBlinkAt) {
+      avatar.blinkTarget = 0.06; avatar.blinkReleaseAt = now + 110;
+      avatar.nextBlinkAt = now + 2200 + Math.random() * 3800;
+    }
+    if (avatar.blinkTarget < 1 && now > avatar.blinkReleaseAt) avatar.blinkTarget = 1;
+    avatar.blink += (avatar.blinkTarget - avatar.blink) * (1 - Math.exp(-dt * 40));
+
+    const gz = avatar.gaze;
+    if (now > gz.nextAt) {
+      gz.nextAt = now + 1500 + Math.random() * 2200;
+      if (avatar.mode === "thinking") { gz.tx = -2.4; gz.ty = -1.8; }
+      else if (avatar.mode === "listening") { gz.tx = 0.6; gz.ty = 0.2; }
+      else { gz.tx = (Math.random() - 0.5) * 4; gz.ty = (Math.random() - 0.5) * 2; }
+    }
+    gz.x += (gz.tx - gz.x) * (1 - Math.exp(-dt * 9)); gz.y += (gz.ty - gz.y) * (1 - Math.exp(-dt * 9));
+
+    if (avatar.mode === "listening") avatar.browTarget = Math.max(avatar.browTarget, 0.45);
+    else if (avatar.mode === "thinking") avatar.browTarget = Math.max(avatar.browTarget, 0.7);
+    avatar.brow += (avatar.browTarget - avatar.brow) * (1 - Math.exp(-dt * 12));
+    avatar.browTarget = Math.max(0, avatar.browTarget - dt * 1.6);
+
+    applyAvatar(now);
+    requestAnimationFrame(frame);
+  }
+
+  function setGender(g, { keepVoice = false } = {}) {
+    settings.gender = g; avatar.gender = g;
+    if (!keepVoice) settings.voiceURI = "";
+    saveSettings();
+    renderAvatar();
+    document.querySelectorAll("#persona button").forEach(b => b.classList.toggle("active", b.dataset.g === g));
+    setFemale.classList.toggle("active", g === "female");
+    setMale.classList.toggle("active", g === "male");
+    renderVoiceSelect();
+    if (tts.state === "speaking") restartCurrent();               // switch voice mid-sentence
+  }
+
+  // ---- UI state (chip + avatar mode + player buttons) ----
+  const MODE_LABEL = { idle: "Ready", listening: "Listening…", thinking: "Thinking…", speaking: "Speaking", paused: "Paused" };
+  function setMode(mode) {
+    avatar.mode = mode;
+    avatarWrapEl.classList.remove("speaking", "listening", "thinking");
+    if (mode === "speaking" || mode === "listening" || mode === "thinking") avatarWrapEl.classList.add(mode);
+    stateChip.className = "state-chip " + mode;
+    stateText.textContent = MODE_LABEL[mode] || "Ready";
+    syncPlayerUI();
+  }
+
+  function placeAvatar() {
+    const target = chatView.style.display !== "none" ? stageSlot : greetSlot;
+    const chip = stateChip;
+    if (avatarWrapEl.parentElement !== target) { target.appendChild(avatarWrapEl); target.appendChild(chip); }
+  }
+  function setView(chat) {
+    greetingView.style.display = chat ? "none" : "flex";
+    chatView.style.display = chat ? "flex" : "none";
+    placeAvatar();
+  }
+
+  // =====================================================================
+  //  Text-to-speech — sentence by sentence, so it can be paused, skipped,
+  //  interrupted, and the speed changed mid-answer (like a video player).
+  // =====================================================================
+  const synth = ("speechSynthesis" in window) ? window.speechSynthesis : null;
+  let allVoices = [];
+  const FEMALE_RE = /zira|samantha|susan|hazel|aria|jenny|emma|female|victoria|karen|moira|tessa|fiona|heera|veena|neerja|swara|sonia|libby|michelle|natasha|google us english|microsoft (?:eva|catherine)|joanna|salli|kendra|ivy|allison|ava\b|serena|kate/i;
+  const MALE_RE = /david|mark\b|james|george|daniel|alex\b|fred|\bmale\b|ravi|prabhat|guy\b|ryan|thomas|oliver|rishi|brian|davis|eric|christopher|arthur|matthew|joey|justin|kevin|aaron/i;
+
+  function loadVoices() { if (!synth) return; allVoices = synth.getVoices() || []; renderVoiceSelect(); }
+  if (synth) { loadVoices(); synth.onvoiceschanged = loadVoices; }
+
+  let voiceMatched = false;
+  function getVoice() {
+    voiceMatched = false;
+    if (!allVoices.length) return null;
+    if (settings.voiceURI) {
+      const v = allVoices.find(v => v.voiceURI === settings.voiceURI);
+      if (v) { voiceMatched = true; return v; }
+    }
+    const en = allVoices.filter(v => /^en/i.test(v.lang));
+    const pool = en.length ? en : allVoices;
+    const re = settings.gender === "female" ? FEMALE_RE : MALE_RE;
+    const bad = settings.gender === "female" ? MALE_RE : FEMALE_RE;
+    const order = l => { const i = ["en-IN", "en-US", "en-GB"].findIndex(x => l.toLowerCase().startsWith(x.toLowerCase())); return i < 0 ? 9 : i; };
+    const pref = pool.filter(v => re.test(v.name) && !bad.test(v.name)).sort((a, b) => order(a.lang) - order(b.lang));
+    if (pref.length) { voiceMatched = true; return pref[0]; }
+    return pool.sort((a, b) => order(a.lang) - order(b.lang))[0] || null;
+  }
+
+  function renderVoiceSelect() {
+    if (!voiceSelect) return;
+    const en = allVoices.filter(v => /^en/i.test(v.lang));
+    const list = en.length ? en : allVoices;
+    voiceSelect.innerHTML = `<option value="">Automatic (matches the ${settings.gender} avatar)</option>` +
+      list.map(v => `<option value="${escapeHtml(v.voiceURI)}">${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`).join("");
+    voiceSelect.value = settings.voiceURI || "";
+    if (voiceSelect.value !== (settings.voiceURI || "")) voiceSelect.value = "";
+  }
+
+  let voiceEnabled = true;
+  try { voiceEnabled = localStorage.getItem(STORAGE_KEYS.voice) !== "off"; } catch (e) {}
+  function setVoiceEnabled(on) {
+    voiceEnabled = on;
+    try { localStorage.setItem(STORAGE_KEYS.voice, on ? "on" : "off"); } catch (e) {}
+    voiceToggleBtn.textContent = on ? "🔊" : "🔇";
+    voiceOnBtn.classList.toggle("active", on);
+    voiceOffBtn.classList.toggle("active", !on);
+    if (!on) stopSpeaking();
+  }
+
+  const tts = { sentences: [], idx: 0, pos: 0, state: "idle", token: 0 };
+
+  function toSpeechChunks(text) {
+    const t = text.replace(/⚠️?/g, "Note: ").replace(/[•*]/g, "");
+    const out = [];
+    for (let line of t.split(/\n+/)) {
+      line = line.trim().replace(/^\d+[.)]\s+/, "");
+      if (!line) continue;
+      for (let p of line.split(/(?<=[.!?])\s+(?=[A-Z0-9"“(])/)) {
+        p = p.trim();
+        while (p.length > 240) {
+          let cut = p.lastIndexOf(", ", 200);
+          if (cut < 80) cut = p.lastIndexOf(" ", 200);
+          if (cut < 40) cut = 200;
+          out.push(p.slice(0, cut + 1).trim());
+          p = p.slice(cut + 1).trim();
+        }
+        if (p) out.push(p);
+      }
+    }
+    return out;
+  }
+
+  function showCaption(full, pos, wordLen) {
+    if (pos == null) { captionEl.textContent = full; return; }
+    const end = wordLen ? pos + wordLen : pos;
+    captionEl.innerHTML = escapeHtml(full.slice(0, pos)) + (wordLen ? `<mark>${escapeHtml(full.slice(pos, end))}</mark>` : "") + escapeHtml(full.slice(end));
+  }
+
+  function speakText(text) {
+    if (!voiceEnabled || !synth || !text) return;
+    stopSpeaking();
+    tts.sentences = toSpeechChunks(text);
+    if (!tts.sentences.length) return;
+    tts.idx = 0; tts.pos = 0; tts.state = "speaking";
+    setMode("speaking");
+    setTimeout(speakCurrent, 60);                                 // lets a prior cancel() settle
+  }
+
+  function speakCurrent() {
+    if (tts.state !== "speaking") return;
+    if (tts.idx >= tts.sentences.length) { finishSpeaking(); return; }
+    const my = ++tts.token;
+    const full = tts.sentences[tts.idx];
+    const start = Math.min(tts.pos, Math.max(0, full.length - 1));
+    const u = new SpeechSynthesisUtterance(full.slice(start));
+    const v = getVoice();
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = settings.rate;
+    u.pitch = voiceMatched ? 1 : (settings.gender === "female" ? 1.18 : 0.82);
+    showCaption(full, start, 0);
+    lip.lastBoundary = 0;
+    u.onstart = () => { if (my === tts.token) setMode("speaking"); };
+    u.onboundary = e => {
+      if (my !== tts.token) return;
+      if (e.name && e.name !== "word") return;
+      const abs = start + (e.charIndex || 0);
+      tts.pos = abs;
+      const word = (full.slice(abs).match(/^\S+/) || [""])[0];
+      lip.word = word.replace(/[^a-z]/gi, "").toLowerCase();
+      lip.wordStart = performance.now();
+      lip.lastBoundary = lip.wordStart;
+      lip.msPerChar = 72 / settings.rate;
+      if (word.length > 6) avatar.browTarget = 0.8;
+      showCaption(full, abs, word.length);
+    };
+    u.onend = () => { if (my !== tts.token) return; tts.idx++; tts.pos = 0; speakCurrent(); };
+    u.onerror = e => {
+      if (my !== tts.token) return;
+      if (e.error === "canceled" || e.error === "interrupted") return;
+      tts.idx++; tts.pos = 0; speakCurrent();
+    };
+    synth.speak(u);
+  }
+
+  function restartCurrent() {                                     // used for speed / voice changes
+    if (tts.state !== "speaking") return;
+    tts.token++; synth.cancel();
+    setTimeout(speakCurrent, 60);
+  }
+
+  function pauseSpeaking() {
+    if (tts.state !== "speaking") return;
+    tts.token++; synth.cancel();
+    tts.state = "paused"; setMode("paused");
+  }
+  function resumeSpeaking() {
+    if (tts.state !== "paused") return;
+    tts.state = "speaking"; setMode("speaking");
+    setTimeout(speakCurrent, 40);
+  }
+  function stopSpeaking() {
+    const was = tts.state !== "idle";
+    tts.token++;
+    if (synth) synth.cancel();
+    tts.state = "idle"; tts.sentences = []; tts.idx = 0; tts.pos = 0;
+    captionEl.textContent = "";
+    if (avatar.mode === "speaking" || avatar.mode === "paused") setMode(isAsking ? "thinking" : "idle");
+    return was;
+  }
+  function finishSpeaking() {
+    tts.state = "idle"; tts.sentences = []; tts.idx = 0; tts.pos = 0;
+    setTimeout(() => { if (tts.state === "idle") captionEl.textContent = ""; }, 1200);
+    setMode("idle");
+    if (settings.handsFree && !isAsking && !listening) setTimeout(() => startListening(), 350);
+  }
+  function skipSentence(delta) {
+    if (tts.state === "idle") return;
+    tts.token++; synth.cancel();
+    tts.idx += delta; tts.pos = 0;
+    if (tts.idx < 0) tts.idx = 0;
+    if (tts.idx >= tts.sentences.length) { finishSpeaking(); return; }
+    if (tts.state === "speaking") setTimeout(speakCurrent, 60);
+    else showCaption(tts.sentences[tts.idx]);
+  }
+  function lastAnswerText() {
+    for (let i = savedMessages.length - 1; i >= 0; i--) if (savedMessages[i].role === "assistant" && savedMessages[i].text) return savedMessages[i].text;
+    return "";
+  }
+
+  function syncPlayerUI() {
+    const active = tts.state !== "idle";
+    btnStop.disabled = !active; btnPrev.disabled = !active; btnNext.disabled = !active;
+    ppIcon.innerHTML = tts.state === "speaking"
+      ? `<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>`
+      : `<polygon points="6 4 20 12 6 20 6 4"/>`;
+    btnPlayPause.title = tts.state === "speaking" ? "Pause" : (tts.state === "paused" ? "Resume" : "Listen to the last answer");
+    speedBtn.textContent = (settings.rate === 1 ? "1" : String(settings.rate)) + "×";
+  }
+
+  function setRate(r) {
+    settings.rate = clamp(Number(r) || 1, 0.5, 2);
+    saveSettings();
+    rateRange.value = settings.rate;
+    rateLabel.textContent = settings.rate + "×";
+    syncPlayerUI();
+    if (tts.state === "speaking") restartCurrent();               // picks up where it was, at the new speed
+  }
+
+  btnPlayPause.addEventListener("click", () => {
+    if (tts.state === "speaking") pauseSpeaking();
+    else if (tts.state === "paused") resumeSpeaking();
+    else { const t = lastAnswerText(); if (t) speakText(t); }
+  });
+  btnStop.addEventListener("click", () => stopSpeaking());
+  btnPrev.addEventListener("click", () => skipSentence(-1));
+  btnNext.addEventListener("click", () => skipSentence(1));
+  speedBtn.addEventListener("click", () => {
+    showPopMenu(speedBtn, RATES.map(r => ({ label: r === 1 ? "1× (Normal)" : r + "×", active: r === settings.rate, fn: () => setRate(r) })), { up: true });
+  });
+  rateRange.addEventListener("input", () => setRate(rateRange.value));
+  document.querySelectorAll("#persona button").forEach(b => b.addEventListener("click", () => setGender(b.dataset.g)));
+  setFemale.addEventListener("click", () => setGender("female"));
+  setMale.addEventListener("click", () => setGender("male"));
+  voiceSelect.addEventListener("change", () => { settings.voiceURI = voiceSelect.value; saveSettings(); if (tts.state === "speaking") restartCurrent(); });
+  voiceToggleBtn.addEventListener("click", () => setVoiceEnabled(!voiceEnabled));
+  voiceOnBtn.addEventListener("click", () => setVoiceEnabled(true));
+  voiceOffBtn.addEventListener("click", () => setVoiceEnabled(false));
+
+  function setHandsFree(on) {
+    settings.handsFree = on; saveSettings();
+    hfOnBtn.classList.toggle("active", on); hfOffBtn.classList.toggle("active", !on);
+  }
+  hfOnBtn.addEventListener("click", () => setHandsFree(true));
+  hfOffBtn.addEventListener("click", () => setHandsFree(false));
+
+  function setSilence(sec) {
+    settings.silenceSec = clamp(Number(sec) || 2, 1, 5); saveSettings();
+    silenceRange.value = settings.silenceSec; silenceLabel.textContent = settings.silenceSec.toFixed(1) + " s";
+  }
+  silenceRange.addEventListener("input", () => setSilence(silenceRange.value));
+
+  // =====================================================================
+  //  Voice input — keeps listening until you pause for N seconds, then sends.
+  // =====================================================================
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, listening = false, listenBar = null, baseText = "", finalText = "", interimText = "";
+  let silenceTimer = null, idleTimer = null, gotSpeech = false;
+
+  function activeBar() { return chatView.style.display !== "none" ? bars.chat : bars.greeting; }
+
+  function restartSilenceBar() {
+    const fill = listenBar.listen.querySelector(".silence-fill");
+    fill.classList.remove("run");
+    void fill.offsetWidth;
+    fill.style.setProperty("--ms", Math.round(settings.silenceSec * 1000) + "ms");
+    fill.classList.add("run");
+  }
+
+  function startListening() {
+    if (listening || isAsking) return;
+    if (!SR) { flashNote("Voice input isn't supported in this browser — use Chrome or Edge."); return; }
+    stopSpeaking();
+    listenBar = activeBar();
+    baseText = listenBar.input.value.trim();
+    finalText = ""; interimText = ""; gotSpeech = false;
+    rec = new SR();
+    rec.continuous = true; rec.interimResults = true;
+    rec.lang = navigator.language || "en-US";
+
+    rec.onresult = e => {
+      interimText = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i], tx = r[0].transcript;
+        if (r.isFinal) finalText += tx + " "; else interimText += tx;
+      }
+      gotSpeech = true;
+      clearTimeout(idleTimer);
+      listenBar.input.value = (baseText + " " + finalText + interimText).replace(/\s+/g, " ").trim();
+      clearTimeout(silenceTimer);                                  // still talking: restart the wait
+      silenceTimer = setTimeout(() => finishListening(true), settings.silenceSec * 1000);
+      restartSilenceBar();
+    };
+    rec.onerror = e => {
+      if (e.error === "no-speech" || e.error === "aborted") return;
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") flashNote("Microphone blocked — allow it using the lock icon in the address bar.");
+      else if (e.error === "network") flashNote("Voice input needs an internet connection.");
+      else flashNote("Voice input error: " + e.error);
+      finishListening(false);
+    };
+    rec.onend = () => { if (listening) { try { rec.start(); } catch (e) {} } };   // browsers end sessions on their own: keep going
+
+    listening = true;
+    listenBar.mic.classList.add("on"); listenBar.shell.classList.add("listening"); listenBar.listen.classList.add("on");
+    listenBar.listen.querySelector(".silence-fill").classList.remove("run");
+    setMode("listening");
+    try { rec.start(); } catch (e) {}
+    idleTimer = setTimeout(() => { if (!gotSpeech) { flashNote("I didn't hear anything — tap the mic and try again."); finishListening(false); } }, 9000);
+  }
+
+  function finishListening(send) {
+    if (!listening) return;
+    listening = false;
+    clearTimeout(silenceTimer); clearTimeout(idleTimer);
+    const bar = listenBar;
+    try { rec.onend = null; rec.stop(); } catch (e) {}
+    bar.mic.classList.remove("on"); bar.shell.classList.remove("listening"); bar.listen.classList.remove("on");
+    bar.listen.querySelector(".silence-fill").classList.remove("run");
+    const text = (baseText + " " + finalText + interimText).replace(/\s+/g, " ").trim();
+    setMode(isAsking ? "thinking" : "idle");
+    if (send && text) { bar.input.value = ""; askQuestion(text); }
+    else bar.input.value = send ? "" : text;
+  }
+  function stopListening(send) { finishListening(send); }
+
+  function toggleMic(which) {
+    if (listening) finishListening(true);                          // tap again = "I'm done, answer now"
+    else { listenBar = bars[which]; startListening(); }
+  }
+  micBtnGreeting.addEventListener("click", () => toggleMic("greeting"));
+  micBtn.addEventListener("click", () => toggleMic("chat"));
+
+  let noteTimer = null;
+  function flashNote(msg) {
+    cooldownNote.textContent = msg;
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(() => { cooldownNote.textContent = ""; }, 5000);
+    if (chatView.style.display === "none") alert(msg);
+  }
+
+  function interruptAll() {
+    if (listening) finishListening(false);
+    stopSpeaking();
+  }
+  document.addEventListener("keydown", e => { if (e.key === "Escape") interruptAll(); });
+
+  // =====================================================================
+  //  Pop-up menus + downloads
+  // =====================================================================
+  let openMenu = null;
+  function closePopMenu() { if (openMenu) { openMenu.remove(); openMenu = null; } }
+  function showPopMenu(anchor, options, { up = false } = {}) {
+    closePopMenu();
+    const m = document.createElement("div");
+    m.className = "pop-menu";
+    options.forEach(o => {
+      const b = document.createElement("button");
+      b.textContent = o.label;
+      if (o.active) b.classList.add("active");
+      b.onclick = e => { e.stopPropagation(); closePopMenu(); o.fn(); };
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    const r = anchor.getBoundingClientRect(), mh = m.offsetHeight, mw = m.offsetWidth;
+    let top = up ? r.top - mh - 6 : r.bottom + 6;
+    if (top < 8) top = r.bottom + 6;
+    if (top + mh > innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+    m.style.position = "fixed";
+    m.style.top = top + "px";
+    m.style.left = clamp(r.left, 8, innerWidth - mw - 8) + "px";
+    openMenu = m;
+    setTimeout(() => document.addEventListener("click", closePopMenu, { once: true }), 0);
+  }
+
+  function textToHtml(text) {
+    const out = []; let list = [];
+    const flush = () => { if (list.length) { out.push("<ul>" + list.map(l => `<li>${escapeHtml(l)}</li>`).join("") + "</ul>"); list = []; } };
+    for (const para of String(text).split(/\n{2,}/)) {
+      for (const line of para.split("\n")) {
+        const t = line.trim();
+        if (!t) continue;
+        if (t.startsWith("• ")) list.push(t.slice(2));
+        else { flush(); out.push(`<p>${escapeHtml(t)}</p>`); }
+      }
+      flush();
+    }
+    return out.join("\n");
+  }
+  function docHtml(items, title) {
+    const body = items.map(it => `
+      <div class="qa">
+        <p class="q">${escapeHtml(it.question || "Question")}</p>
+        ${textToHtml(it.text)}
+        ${it.docs && it.docs.length ? `<p class="src">Source documents: ${escapeHtml(it.docs.join(", "))}</p>` : ""}
+      </div>`).join("\n");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+<style>
+  body { font-family: Calibri, Arial, sans-serif; color: #1a1a1a; line-height: 1.55; margin: 32px; }
+  h1 { font-size: 20pt; margin: 0 0 4px; } .date { color: #666; font-size: 10pt; margin-bottom: 22px; }
+  .qa { margin-bottom: 22px; } .q { font-weight: bold; font-size: 12.5pt; color: #2b3a8f; margin: 0 0 6px; }
+  p { margin: 0 0 8px; } ul { margin: 0 0 8px 18px; } .src { color: #666; font-size: 9.5pt; font-style: italic; }
+  .foot { color: #888; font-size: 9pt; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 8px; }
+</style></head><body>
+<h1>${escapeHtml(title)}</h1><div class="date">${escapeHtml(new Date().toLocaleString())}</div>
+${body}
+<div class="foot">Generated by Folio — Multimodal RAG document assistant</div></body></html>`;
+  }
+  function fileStamp() { const d = new Date(), p = n => String(n).padStart(2, "0"); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`; }
+  function downloadBlob(content, mime, filename) {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  function exportWord(items, title) { downloadBlob("﻿" + docHtml(items, title), "application/msword;charset=utf-8", `Folio-${fileStamp()}.doc`); }
+  function exportText(items, title) {
+    const txt = title + "\n" + "=".repeat(title.length) + "\n\n" + items.map(it => `Q: ${it.question || ""}\n\n${it.text}\n${it.docs && it.docs.length ? "\nSource documents: " + it.docs.join(", ") + "\n" : ""}`).join("\n----------\n\n");
+    downloadBlob(txt, "text/plain;charset=utf-8", `Folio-${fileStamp()}.txt`);
+  }
+  function exportPdf(items, title) {
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+    document.body.appendChild(iframe);
+    const d = iframe.contentWindow.document;
+    d.open(); d.write(docHtml(items, title)); d.close();
+    setTimeout(() => { iframe.contentWindow.focus(); iframe.contentWindow.print(); setTimeout(() => iframe.remove(), 3000); }, 350);
+  }
+  function exportMenu(anchor, items, title) {
+    showPopMenu(anchor, [
+      { label: "Word document (.doc)", fn: () => exportWord(items, title) },
+      { label: "PDF (choose “Save as PDF”)", fn: () => exportPdf(items, title) },
+      { label: "Plain text (.txt)", fn: () => exportText(items, title) },
+    ]);
+  }
+  function sessionItems() {
+    return savedMessages.filter(m => m.role === "assistant" && m.text).map(m => ({ question: m.question, text: m.text, docs: m.docs }));
+  }
+  exportBtn.addEventListener("click", () => {
+    const items = sessionItems();
+    if (!items.length) { flashNote("Ask a question first — there's nothing to download yet."); return; }
+    exportMenu(exportBtn, items, "Folio — Conversation");
+  });
+
+  // =====================================================================
+  //  Persistence + messages
+  // =====================================================================
+  function persist() {
+    try {
+      localStorage.setItem(STORAGE_KEYS.messages, JSON.stringify(savedMessages));
+      localStorage.setItem(STORAGE_KEYS.evaluation, JSON.stringify(evaluationHistory));
+      localStorage.setItem(STORAGE_KEYS.qaHistory, JSON.stringify(qaHistory));
+      localStorage.setItem(STORAGE_KEYS.scope, activeScope || "");
+    } catch (e) {}
+  }
+
+  const ICON_DL = `<svg class="ico" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
+  const ICON_PLAY = `<svg class="ico ico-fill" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></svg>`;
+
+  function rowInner(m) {
+    let html = `<div class="bubble2">${m.html}</div>`;
+    if (m.role === "assistant" && m.text) {
+      if (m.docs && m.docs.length) html += `<div class="msg-from">From: ${m.docs.map(escapeHtml).join(", ")}</div>`;
+      html += `<div class="msg-actions">
+        <button class="act-btn" data-act="listen">${ICON_PLAY} Listen</button>
+        <button class="act-btn" data-act="download">${ICON_DL} Download</button>
+        <button class="act-btn" data-act="copy">Copy</button>
+      </div>`;
+    }
+    return html + `<div class="bubble-time">${m.time}</div>`;
+  }
+
+  function renderMessagesFromSaved() {
+    conversation.innerHTML = savedMessages.map((m, i) => `<div class="bubble-row ${m.role}" data-idx="${i}">${rowInner(m)}</div>`).join("");
+    conversation.scrollTop = conversation.scrollHeight;
+  }
+
+  function htmlToPlain(html) {
+    return String(html || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "")
+      .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+  }
+  // Older saved answers (from before this version) are cleaned up and given download buttons too.
+  function migrateSaved(list) {
+    let lastUser = "";
+    return list.map(m => {
+      if (m.role === "user") { lastUser = htmlToPlain(m.html); return m; }
+      if (m.role === "assistant" && m.text === undefined && m.html && !/status-note|Request failed/.test(m.html)) {
+        const text = cleanAnswer(htmlToPlain(m.html));
+        return { ...m, text, html: escapeHtml(text), question: lastUser };
+      }
+      return m;
+    });
+  }
+
+  function loadPersisted() {
+    try {
+      savedMessages = migrateSaved(JSON.parse(localStorage.getItem(STORAGE_KEYS.messages) || "[]"));
+      evaluationHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.evaluation) || "[]");
+      qaHistory = JSON.parse(localStorage.getItem(STORAGE_KEYS.qaHistory) || "[]");
+      const scope = localStorage.getItem(STORAGE_KEYS.scope) || null;
+      if (scope) activeScope = scope;
+    } catch (e) {}
+  }
+
+  function showGreetingIfEmpty() {
+    const has = savedMessages.length > 0;
+    setView(has);
+    if (has) renderMessagesFromSaved();
+  }
+
+  function appendMessage(role, html, extra = {}) {
+    setView(true);
+    const m = { role, html, time: timeNow(), ...extra };
+    savedMessages.push(m);
+    const row = document.createElement("div");
+    row.className = `bubble-row ${role}`;
+    row.dataset.idx = savedMessages.length - 1;
+    row.innerHTML = rowInner(m);
+    conversation.appendChild(row);
+    conversation.scrollTop = conversation.scrollHeight;
+    persist();
+    return row;
+  }
+  function updateMessage(row, fields) {
+    const idx = Number(row.dataset.idx);
+    if (!savedMessages[idx]) return;
+    Object.assign(savedMessages[idx], fields);
+    row.innerHTML = rowInner(savedMessages[idx]);
+    persist();
+  }
+  function appendSystemMessage(text) { return appendMessage("system", text); }
+
+  conversation.addEventListener("click", e => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const row = btn.closest(".bubble-row");
+    const m = savedMessages[Number(row.dataset.idx)];
+    if (!m || !m.text) return;
+    if (btn.dataset.act === "listen") { if (!voiceEnabled) setVoiceEnabled(true); speakText(m.text); }
+    else if (btn.dataset.act === "download") exportMenu(btn, [{ question: m.question, text: m.text, docs: m.docs }], "Folio — Answer");
+    else if (btn.dataset.act === "copy") { navigator.clipboard?.writeText(m.text); btn.textContent = "Copied ✓"; setTimeout(() => { btn.textContent = "Copy"; }, 1500); }
+  });
+
+  // ---------- Drawers ----------
+  const drawers = { docs: docsDrawer, eval: evalDrawer, history: historyDrawer, settings: settingsDrawer };
+  const railBtns = { docs: railDocs, eval: railEval, history: railHistory, settings: railSettings };
+  function closeAllDrawers() {
+    Object.values(drawers).forEach(d => d.classList.remove("open"));
+    Object.values(railBtns).forEach(b => b.classList.remove("active"));
+  }
+  function openDrawer(name) {
+    const alreadyOpen = drawers[name].classList.contains("open");
+    closeAllDrawers();
+    if (alreadyOpen) return;
+    drawers[name].classList.add("open");
+    railBtns[name].classList.add("active");
+    if (name === "eval") renderEvaluation();
+    if (name === "history") renderHistory();
+  }
+  railDocs.addEventListener("click", () => openDrawer("docs"));
+  railEval.addEventListener("click", () => openDrawer("eval"));
+  railHistory.addEventListener("click", () => openDrawer("history"));
+  railSettings.addEventListener("click", () => openDrawer("settings"));
+  railHome.addEventListener("click", () => { closeAllDrawers(); railHome.classList.add("active"); });
+  document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", closeAllDrawers));
+
+  clearHistoryBtn.addEventListener("click", () => {
+    if (!confirm("Clear saved conversation and question history from this browser?")) return;
+    resetSession();
+  });
+
+  // ---------- Evaluation panel (no page numbers) ----------
+  function renderEvaluation() {
+    if (evaluationHistory.length === 0) {
+      evalContent.innerHTML = `<div class="card"><p>Ask a question to see how confidently each source matched it.</p></div>`;
+      return;
+    }
+    const scored = evaluationHistory.filter(e => e.retrieval_mode === "semantic_topk").flatMap(e => e.citations.filter(c => typeof c.confidence === "number"));
+    const overallAvg = scored.length ? (scored.reduce((s, c) => s + c.confidence, 0) / scored.length).toFixed(1) : null;
+
+    let html = `<div class="card"><h3>Conversation summary</h3>
+      <p style="margin-bottom:10px;">${evaluationHistory.length} question${evaluationHistory.length === 1 ? "" : "s"} asked this session</p>`;
+    if (overallAvg !== null) {
+      html += `<div class="avg-confidence">${overallAvg}%</div>
+        <div class="avg-confidence-label">Average confidence across ${scored.length} source(s)</div>
+        <div class="conf-bar-track" style="width:100%; height:8px; margin-top:8px;"><div class="conf-bar-fill" style="width:${overallAvg}%"></div></div>`;
+    } else html += `<p>No semantic-retrieval questions yet.</p>`;
+    html += `</div>`;
+
+    const modeLabel = { semantic_topk: "Semantic top-k", full_document: "Full-document mode", none: "No retrieval" };
+    html += [...evaluationHistory].reverse().map(entry => {
+      const { question, retrieval_mode, citations, time } = entry;
+      let card = `<div class="card">
+        <div class="eval-question">"${escapeHtml(question)}"</div>
+        <span class="eval-mode-pill ${retrieval_mode}">${modeLabel[retrieval_mode] || retrieval_mode}</span>
+        <span style="float:right; font-size:0.7rem; color:var(--text-faint);">${time}</span>
+        <div style="clear:both;"></div>`;
+      if (retrieval_mode === "semantic_topk" && citations.length) {
+        card += citations.map(c => `
+          <div class="conf-row">
+            <div class="conf-label">${escapeHtml(c.document_id)} · ${escapeHtml(c.modality)}</div>
+            <div class="conf-bar-track"><div class="conf-bar-fill" style="width:${c.confidence ?? 0}%"></div></div>
+            <div class="conf-pct">${c.confidence ?? "—"}%</div>
+          </div>`).join("");
+      } else if (retrieval_mode === "full_document") {
+        card += `<p style="margin-top:8px;">Every chunk from the scoped document was used directly — no ranking, so no per-source confidence.</p>`;
+      } else {
+        card += `<p style="margin-top:8px;">Deterministic count or general-knowledge fallback — no retrieval scoring involved.</p>`;
+      }
+      return card + `</div>`;
+    }).join("");
+    evalContent.innerHTML = html;
+  }
+
+  function renderHistory() {
+    if (qaHistory.length === 0) { historyContent.innerHTML = `<div class="card"><p>No questions asked yet.</p></div>`; return; }
+    historyContent.innerHTML = [...qaHistory].reverse().map(h => `
+      <div class="card">
+        <div class="eval-question">"${escapeHtml(h.question)}"</div>
+        <span style="float:right; font-size:0.7rem; color:var(--text-faint);">${h.time}</span>
+        <div style="clear:both;"></div>
+        <p style="margin-top:8px; white-space:pre-wrap; color:var(--text);">${escapeHtml(cleanAnswer(h.answer, { keepPages: /\bpages?\b/i.test(h.question) }))}</p>
+      </div>`).join("");
+  }
+
+  // ---------- Scope ----------
+  function scopeText(id) { return id ? `🗂 ${id}` : "🗂 All documents"; }
+  function setScope(documentId) {
+    activeScope = documentId;
+    scopeLabel.textContent = documentId ? `Scoped · ${documentId}` : "Searching all documents";
+    scopeNote.textContent = documentId ? `Asking within: ${documentId}` : "Asking across all indexed documents";
+    scopePill.textContent = scopeText(documentId);
+    scopePillGreeting.textContent = scopeText(documentId);
+    scopePill.classList.toggle("scoped", !!documentId);
+    scopePillGreeting.classList.toggle("scoped", !!documentId);
+    renderDocsList();
+    persist();
+  }
+  scopePill.addEventListener("click", () => { if (activeScope) setScope(null); else openDrawer("docs"); });
+  scopePillGreeting.addEventListener("click", () => { if (activeScope) setScope(null); else openDrawer("docs"); });
+
+  function resetSession() {
+    interruptAll();
+    savedMessages = []; evaluationHistory = []; qaHistory = [];
+    conversation.innerHTML = "";
+    setScope(null);
+    closeAllDrawers();
+    showGreetingIfEmpty();
+    persist();
+  }
+  newSessionBtn.addEventListener("click", resetSession);
+
+  // ---------- Documents list ----------
+  function renderDocsList() {
+    if (knownDocuments.length === 0) {
+      docsList.innerHTML = `<div class="card"><p>No documents indexed yet — use the 📎 button to upload a PDF.</p></div>`;
+      return;
+    }
+    docsList.innerHTML = knownDocuments.map(d => `
+      <div class="doc-row ${activeScope === d.document_id ? "active-row" : ""}" data-doc-id="${escapeHtml(d.document_id)}">
+        <div class="doc-icon">📄</div>
+        <div class="doc-name">${escapeHtml(d.document_id)}</div>
+        <div class="doc-meta">${d.page_count} pages</div>
+      </div>`).join("");
+    docsList.querySelectorAll(".doc-row").forEach(row => {
+      row.addEventListener("click", () => { const id = row.dataset.docId; setScope(activeScope === id ? null : id); });
+    });
+  }
+  async function loadDocumentList() {
+    try {
+      const res = await fetch(`${API_BASE}/documents`);
+      if (!res.ok) return;
+      knownDocuments = (await res.json()).documents;
+      renderDocsList();
+    } catch (err) {
+      docsList.innerHTML = `<div class="card"><p>Can't reach the API — is the server running?</p></div>`;
+    }
+  }
+
+  // ---------- Upload ----------
+  attachBtn.addEventListener("click", () => fileInput.click());
+  attachBtnGreeting.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (file) uploadFile(file);
+    fileInput.value = "";
+  });
+  async function uploadFile(file) {
+    const pending = appendSystemMessage(`📎 Uploading and indexing "${escapeHtml(file.name)}"…`);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: formData });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null);
+        throw new Error(errBody?.detail || `Server returned ${res.status}`);
+      }
+      const data = await res.json();
+      // Simple flow: upload a document, then every question is answered from THAT document.
+      // (Tap the "All documents" pill any time to search everything you've uploaded instead.)
+      setScope(data.document_id);
+      const noText = !data.text_chunks;
+      updateMessage(pending, { html: escapeHtml(
+        `✓ "${data.filename}" is ready (${data.page_count} pages). I'll answer only from this document — ask me anything about it.` +
+        (noText ? `\n⚠ I couldn't find any readable text in this PDF. It may be a scan (pictures of text), so answers may be poor.` : "")) });
+      await loadDocumentList();
+    } catch (err) {
+      updateMessage(pending, { html: escapeHtml(`Upload failed: ${err.message}`) });
+    }
+  }
+
+  // =====================================================================
+  //  Ask
+  // =====================================================================
+  function setAskingUI(disabled) {
+    Object.values(bars).forEach(b => { b.send.disabled = disabled; b.input.disabled = disabled; b.mic.disabled = disabled; });
+    document.querySelectorAll(".suggestion-card").forEach(c => { c.disabled = disabled; });
+  }
+
+  function parseRetrySeconds(detail) {
+    const m = detail.match(/retry in\s+(?:(\d+)h)?\s*(?:(\d+)m)?\s*(?:([\d.]+)s)?/i);
+    if (m && (m[1] || m[2] || m[3])) return (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (parseFloat(m[3]) || 0);
+    const n = detail.match(/retry_delay\s*\{\s*seconds:\s*(\d+)/i);
+    return n ? +n[1] : null;
+  }
+  function fmtWait(sec) {
+    if (sec >= 3600) return `${Math.floor(sec / 3600)}h ${Math.round((sec % 3600) / 60)}m`;
+    if (sec >= 60) return `${Math.round(sec / 60)} min`;
+    return `${Math.ceil(sec)}s`;
+  }
+
+  // Short rate-limit hits (per-minute) are retried automatically with a visible countdown.
+  async function fetchAnswer(question, pendingRow) {
+    for (let attempt = 0; ; attempt++) {
+      const res = await fetch(`${API_BASE}/ask`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, top_k: TOP_K, document_id: activeScope }),
+      });
+      if (res.ok) return await res.json();
+      const errBody = await res.json().catch(() => null);
+      const detail = String(errBody?.detail || `Server returned ${res.status}`);
+      if (/429|ResourceExhausted|quota/i.test(detail)) {
+        const wait = parseRetrySeconds(detail);
+        if (wait !== null && wait <= 45 && attempt < 3) {
+          for (let s = Math.ceil(wait) + 1; s > 0; s--) {
+            pendingRow.querySelector(".bubble2").innerHTML = `<span class="status-note">The free-tier speed limit was reached — trying again automatically in ${s}s…</span>`;
+            await sleep(1000);
+          }
+          pendingRow.querySelector(".bubble2").innerHTML = `<span class="status-note">Thinking…</span>`;
+          continue;
+        }
+        throw new Error(wait !== null && wait > 45
+          ? `The Gemini free-tier quota is used up for now (it resets in about ${fmtWait(wait)}). Add another API key from a different Google project in GEMINI_API_KEYS, or try again later.`
+          : "The Gemini free-tier limit was reached. Please wait a minute and try again.");
+      }
+      throw new Error(detail);
+    }
+  }
+
+  async function askQuestion(question) {
+    if (!question || isAsking) return;
+    const secondsSinceLast = (Date.now() - lastAskAt) / 1000;
+    if (lastAskAt && secondsSinceLast < MIN_SECONDS_BETWEEN_ASKS) {
+      const wait = Math.ceil(MIN_SECONDS_BETWEEN_ASKS - secondsSinceLast);
+      flashNote(`Please wait ${wait}s before asking again (avoids the API's rate limit).`);
+      return;
+    }
+
+    interruptAll();                                  // asking something new interrupts whatever was being said
+    isAsking = true; lastAskAt = Date.now();
+    cooldownNote.textContent = "";
+    setAskingUI(true);
+    setMode("thinking");
+
+    appendMessage("user", escapeHtml(question), { text: question });
+    const pending = appendMessage("assistant", `<span class="status-note">Thinking…</span>`);
+
+    try {
+      const data = await fetchAnswer(question, pending);
+      const text = cleanAnswer(data.answer, { keepPages: /\bpages?\b/i.test(question) });
+      const docs = uniqueDocs(data.citations);
+
+      evaluationHistory.push({ question, retrieval_mode: data.retrieval_mode, citations: data.citations || [], time: timeNow() });
+      qaHistory.push({ question, answer: data.answer, time: timeNow() });
+      updateMessage(pending, { html: escapeHtml(text), text, question, docs });
+      isAsking = false;                              // allow hands-free listening to resume after speech
+      setMode("idle");
+      speakText(text);
+    } catch (err) {
+      updateMessage(pending, { html: escapeHtml(`Request failed: ${err.message}`) });
+      setMode("idle");
+    } finally {
+      isAsking = false;
+      setAskingUI(false);
+      conversation.scrollTop = conversation.scrollHeight;
+    }
+  }
+
+  function submitFrom(which) {
+    const b = bars[which];
+    const q = b.input.value.trim();
+    if (!q || isAsking) return;
+    if (listening) finishListening(false);
+    b.input.value = "";
+    askQuestion(q);
+  }
+  Object.entries(bars).forEach(([which, b]) => {
+    b.send.addEventListener("click", () => submitFrom(which));
+    b.input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing) submitFrom(which); });
+  });
+  document.querySelectorAll(".suggestion-card").forEach(card => {
+    card.addEventListener("click", () => { if (!isAsking) askQuestion(card.dataset.q); });
+  });
+
+  // ---------- Init ----------
+  (function init() {
+    setVoiceEnabled(voiceEnabled);
+    setHandsFree(settings.handsFree);
+    setSilence(settings.silenceSec);
+    setRate(settings.rate);
+    renderAvatar();
+    setGender(settings.gender, { keepVoice: true });
+    loadPersisted();
+    showGreetingIfEmpty();
+    if (activeScope) setScope(activeScope);
+    loadDocumentList().then(() => { if (activeScope) setScope(activeScope); });
+    setMode("idle");
+    requestAnimationFrame(frame);
+  })();
+
+  // Handy for testing from the browser console.
+  window.folioDebug = { avatar, tts, lip, settings, cleanAnswer, mouthGeometry, applyAvatar, renderAvatar, setMode, setGender, setRate, speakText, startListening, finishListening, toSpeechChunks };
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+services:
+  rag:
+    build: .
+    image: multimodal-rag:latest
+    container_name: multimodal-rag
+    ports:
+      - "8000:8000"          # open http://localhost:8000/ui
+    env_file:
+      - .env                 # GEMINI_API_KEYS=key1,key2,key3  (never baked into the image)
+    volumes:
+      - rag_data:/app/data   # keeps uploads and the search index between restarts
+      - rag_cache:/app/.cache  # keeps the downloaded embedding models
+    restart: unless-stopped
+
+volumes:
+  rag_data:
+  rag_cache:

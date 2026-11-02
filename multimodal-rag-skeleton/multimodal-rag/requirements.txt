@@ -1,0 +1,34 @@
+# --- Core API ---
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.9.2
+pydantic-settings==2.5.2
+
+# --- PDF parsing (text, tables, images) ---
+pymupdf==1.24.10          # fitz: fast text + image extraction, page-level
+pdfplumber==0.11.4        # table extraction
+pytesseract==0.3.13       # OCR fallback for scanned pages/embedded text-in-image
+Pillow==10.4.0
+
+# --- Embeddings ---
+sentence-transformers==3.1.1   # MiniLM-L6 text embedder
+open-clip-torch==2.26.1        # CLIP ViT-B/32 image embedder
+torch==2.4.1
+torchvision==0.19.1
+
+# --- Vector index ---
+faiss-cpu==1.8.0.post1
+
+# --- Vision-language generation ---
+anthropic==0.34.2         # or swap for your chosen VLM API client
+
+# --- Dataset + eval ---
+datasets==2.21.0          # HuggingFace, for pixparse/docvqa-single-page-questions
+huggingface_hub==0.25.1
+python-Levenshtein==0.25.1  # for ANLS edit distance
+
+# --- Utilities ---
+numpy==1.26.4
+tqdm==4.66.5
+python-dotenv==1.0.1

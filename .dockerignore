@@ -1,0 +1,18 @@
+# Secrets and local data must never go into the image
+.env
+.env.*
+data/
+
+# Local clutter
+.git
+.gitignore
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+.idea/
+.vscode/
+*.log
+.pytest_cache/
+node_modules/   

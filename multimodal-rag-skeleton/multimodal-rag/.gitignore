@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+env/
+
+# Secrets
+.env
+*.key
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Large files / models / data
+*.pt
+*.pth
+*.bin
+*.safetensors
+data/
+models/
+vector_store/
+chroma_db/
+faiss_index/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
